@@ -14,7 +14,7 @@ if len(sys.argv) == 1:
 	Options:
 	-p page		Choose which page to slice
 	-s 		Print dimensions of inputfile
-	-o output	Output file name
+	-o output	Output file name (without extension)
 	-O orientation	Choose page orientation (l for landscape, p for portrait)
 	-P papersize	Choose output paper size (A6, A5, A4, A3, A2, A1, A0)''')
 	sys.exit()
@@ -23,7 +23,7 @@ else:
 	page=1
 	orientation='l'
 	papersize='a4'
-	output="output.pdf"
+	output="output"
 	original_size=(0,0)
 
 	#process args
@@ -84,21 +84,40 @@ if orientation=='l':
 	orientation=1
 
 
-#define available paper sizes	
-aformat_size = {'a0':(2384,3371),
-		'a1':(1685,2384),
-		'a2':(1190,1684),
-		'a3':( 842,1190),
-		'a4':( 595, 842),
-		'a5':( 420, 595)}
 
 print("Width:", original_size[0], "\tHeight:", original_size[1] )
 print("Target output size:", papersize, "\tOrientation:", orientation)
 
 #calculate page distribution
-pages_xx = math.ceil(original_size[0]/aformat_size[papersize][(orientation+0)&0x01])
-pages_yy = math.ceil(original_size[1]/aformat_size[papersize][(orientation+1)&0x01])
+paper_x = sm.aformat_size[papersize][(orientation+0)&0x01]	#current sheet size width
+paper_y = sm.aformat_size[papersize][(orientation+1)&0x01]	#current sheet size height
+
+pages_xx = math.ceil(original_size[0]/paper_x)
+pages_yy = math.ceil(original_size[1]/paper_y)
+
 
 print("Number of pages on the xx axis:", pages_xx)
 print("Number of pages on the yy axis:", pages_yy)
+print("Total number of pages used:", pages_xx*pages_yy)
 
+slicecuts = sm.getslicecuts(pages_xx, pages_yy, paper_x, paper_y, 1)
+
+
+i=0
+while len(slicecuts) >= 1:
+	cut = slicecuts.pop(0)
+	com = ["gs -sDEVICE=pdfwrite",
+		"-o",output+"_page"+str(i).zfill(3)+".pdf",
+		"-c \"[/CropBox [", 
+		str(cut[0]),	#x1 
+		str(cut[2]),	#y1
+		str(cut[1]),	#x2
+		str(cut[3]),	#y2
+		"] /PAGES pdfmark\"",
+		"-f",
+		input_file]
+	
+	print(" ".join(com))
+	os.system(" ".join(com))
+
+	i = i+1
