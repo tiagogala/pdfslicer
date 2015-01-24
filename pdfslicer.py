@@ -44,9 +44,8 @@ else:
 			else:
 				sys.exit("Error: No page number specified, -p switch can be ommited if the target is the first page only.")
 
-		if arg=="-s":
-			#print file dimensions TODO
-			print("Page size:", sm.getsize("a",3))
+		if arg=="-s":	#FIXME: if other than page 1, this switch must be placed after -p 
+			print("Page size:", sm.getsize(input_file, page))
 		
 		if arg=="-o":
 			if len(sys.argv) >= 1:
