@@ -4,10 +4,12 @@ import sys
 import os.path
 import slicermodules as sm
 
-
+# RUN THIS:
+#	 gs  -sDEVICE=pdfwrite -o marked.pdf -c "[/CropBox [54 54 1314 810] /PAGES pdfmark" -f original.pdf
+#
 
 if len(sys.argv) == 1:
-	print('''Usage: pdfslicer inputfile.pdf [-option args] -o output.pdf
+	print('''Usage: pdfslicer inputfile.pdf [Options]
 	Options:
 	-p page		Choose which page to slice
 	-s 		Print dimensions of inputfile
@@ -69,6 +71,7 @@ else:
 				sys.exit("Error: No paper size specified.")
 
 	# DEBUG
-	print("Using the following options:",[input_file, page, output, orientation, papersize])
+#	print("Using the following options:",[input_file, page, output, orientation, papersize])
 
+	
 
