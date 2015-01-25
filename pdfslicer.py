@@ -4,6 +4,7 @@ import sys
 import os.path
 import slicermodules as sm
 import math
+import glob
 
 # RUN THIS:
 #	 gs  -sDEVICE=pdfwrite -o marked.pdf -c "[/CropBox [54 54 1314 810] /PAGES pdfmark" -f original.pdf
@@ -14,9 +15,11 @@ if len(sys.argv) == 1:
 	Options:
 	-p page		Choose which page to slice
 	-s 		Print dimensions of inputfile
+	-d		Dry-run (don't make changes)
 	-o output	Output file name (without extension)
 	-O orientation	Choose page orientation (l for landscape, p for portrait)
 	-P papersize	Choose output paper size (A6, A5, A4, A3, A2, A1, A0)''')
+
 	sys.exit()
 else:
 	#set defaults:
@@ -25,6 +28,7 @@ else:
 	papersize='a4'
 	output="output"
 	original_size=(0,0)
+	dry_run=0
 
 	#process args
 	sys.argv.pop(0)		#first arg is the script name, it's not useful
@@ -52,6 +56,9 @@ else:
 			print("Width:", original_size[0], "\tHeight:", original_size[1] )
 			sys.exit(0)
 		
+		if arg=="-d":
+			dry_run=1
+
 		if arg=="-o":
 			if len(sys.argv) >= 1:
 				output=sys.argv.pop(0)
@@ -74,8 +81,11 @@ else:
 			else:
 				sys.exit("Error: No paper size specified.")
 
-	# DEBUG
-#	print("Using the following options:",[input_file, page, output, orientation, papersize])
+
+
+# PRINT REPORT
+print("Width:", original_size[0], "\tHeight:", original_size[1] )
+print("Target output size:", papersize.upper(), "\tOrientation:", orientation.upper())
 
 # CONVERT ORIENTATION TO A MORE CONVENIENT FORMAT
 if orientation=='p':
@@ -83,31 +93,35 @@ if orientation=='p':
 if orientation=='l':
 	orientation=1
 
-
-
-print("Width:", original_size[0], "\tHeight:", original_size[1] )
-print("Target output size:", papersize, "\tOrientation:", orientation)
-
 #calculate page distribution
 paper_x = sm.aformat_size[papersize][(orientation+0)&0x01]	#current sheet size width
 paper_y = sm.aformat_size[papersize][(orientation+1)&0x01]	#current sheet size height
 
-pages_xx = math.ceil(original_size[0]/paper_x)
-pages_yy = math.ceil(original_size[1]/paper_y)
+pages_xx = math.ceil(original_size[0]/paper_x)	#number of pages on xx
+pages_yy = math.ceil(original_size[1]/paper_y)	#number of pages on yy
 
+#actually calculate the page distribution
+slicecuts = sm.getslicecuts(pages_xx, pages_yy, paper_x, paper_y)
+sm.applyboundaries(slicecuts, original_size[0], original_size[1]) 
+#actually calculate the page distribution
+slicecuts = sm.getslicecuts(pages_xx, pages_yy, paper_x, paper_y)
+pages_xx, pages_yy = sm.applyboundaries(slicecuts, original_size[0], original_size[1]) 
 
+#print report
 print("Number of pages on the xx axis:", pages_xx)
 print("Number of pages on the yy axis:", pages_yy)
-print("Total number of pages used:", pages_xx*pages_yy)
+print("Total number of pages used:", len(slicecuts))
+print("\n")
 
-slicecuts = sm.getslicecuts(pages_xx, pages_yy, paper_x, paper_y, 1)
 
 
+#run ghostscript commands
 i=0
 while len(slicecuts) >= 1:
 	cut = slicecuts.pop(0)
 	com = ["gs -sDEVICE=pdfwrite",
-		"-o",output+"_page"+str(i).zfill(3)+".pdf",
+		"-q",
+		"-o","_page"+str(i).zfill(3)+".pdf",
 		"-c \"[/CropBox [", 
 		str(cut[0]),	#x1 
 		str(cut[2]),	#y1
@@ -117,7 +131,19 @@ while len(slicecuts) >= 1:
 		"-f",
 		input_file]
 	
-	print(" ".join(com))
-	os.system(" ".join(com))
+	if dry_run==0:
+		os.system(" ".join(com))
 
 	i = i+1
+
+print("Sliced", input_file, "into", str(i),papersize.upper(),"sheets." )
+
+#join pdf's into single file
+if dry_run==0:
+	os.system("gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile="+output+".pdf _page*.pdf")
+
+#delete old pdf's
+r = os.listdir('.')
+for f in r:
+	if f.startswith("_page"):
+		print(f)

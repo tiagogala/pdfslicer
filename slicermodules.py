@@ -1,8 +1,10 @@
 #! /usr/bin/python
 version='1'
 
-import sys, subprocess, os
+import sys, subprocess, os, math
 
+MINIMUM_X = 36 	#half inch
+MINIMUM_Y = 36
 
 def getsize(input_file, page):
 	"Read page size info by calling pdfinfo"
@@ -12,7 +14,7 @@ def getsize(input_file, page):
 
 	for i in range(0, len(info_list)-1):
 		if (info_list[i].decode("utf-8") == "Page") and (info_list[i+2].decode("utf-8") == "size:"):
-			return(float(info_list[i+3].decode("utf-8")), float(info_list[i+5].decode("utf-8")))
+			return(math.floor(float(info_list[i+3].decode("utf-8"))), math.floor(float(info_list[i+5].decode("utf-8"))))
 
 	return "Page not found."
 
@@ -45,5 +47,33 @@ def getslicecuts(pages_xx, pages_yy, paper_x,paper_y, verbose=0):
 			i = i+1
 	return slicecuts
 
-#def applyboundaries(max_x, max_y, cuts):
-#	"Limits "
+def applyboundaries(cuts, max_x, max_y):
+	"Limits the output file boundaries to match the input file"
+
+	rm_list = []
+	#apply top boundaries
+	for a in range(0, len(cuts)):
+		if cuts[a][0] > max_x:
+			cuts[a][0] = max_x
+		if cuts[a][1] > max_x:
+			cuts[a][1] = max_x
+
+		if cuts[a][2] > max_y:
+			cuts[a][2] = max_y
+		if cuts[a][3] > max_y:
+			cuts[a][3] = max_y
+
+		#apply minimum size rules
+		if cuts[a][1]-cuts[a][0] <= MINIMUM_X:
+			rm_list.append(cuts[a])
+			print("Box too small (x):", cuts[a])
+		
+		if cuts[a][3]-cuts[a][2] <= MINIMUM_Y:
+			rm_list.append(cuts[a])
+			print("Box too small (y):", cuts[a])
+
+	
+	#actually remove items
+	for item in rm_list:
+		print("Removing", item)
+		cuts.remove(item)
