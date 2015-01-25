@@ -97,15 +97,16 @@ if orientation=='l':
 paper_x = sm.aformat_size[papersize][(orientation+0)&0x01]	#current sheet size width
 paper_y = sm.aformat_size[papersize][(orientation+1)&0x01]	#current sheet size height
 
-pages_xx = math.ceil(original_size[0]/paper_x)	#number of pages on xx
-pages_yy = math.ceil(original_size[1]/paper_y)	#number of pages on yy
+pages_xx = math.ceil((original_size[0]-sm.MINIMUM_X)/paper_x)	#number of pages on xx
+pages_yy = math.ceil((original_size[1]-sm.MINIMUM_Y)/paper_y)	#number of pages on yy
+
+# 	original_size-MINIMUM_X means anything that doesn't match this
+#	limits won't count for the page numbering!
+
 
 #actually calculate the page distribution
 slicecuts = sm.getslicecuts(pages_xx, pages_yy, paper_x, paper_y)
 sm.applyboundaries(slicecuts, original_size[0], original_size[1]) 
-#actually calculate the page distribution
-slicecuts = sm.getslicecuts(pages_xx, pages_yy, paper_x, paper_y)
-pages_xx, pages_yy = sm.applyboundaries(slicecuts, original_size[0], original_size[1]) 
 
 #print report
 print("Number of pages on the xx axis:", pages_xx)
@@ -121,6 +122,8 @@ while len(slicecuts) >= 1:
 	cut = slicecuts.pop(0)
 	com = ["gs -sDEVICE=pdfwrite",
 		"-q",
+		"-dFirstPage="+page,
+		"-dLastPage="+page,
 		"-o","_page"+str(i).zfill(3)+".pdf",
 		"-c \"[/CropBox [", 
 		str(cut[0]),	#x1 
@@ -145,5 +148,5 @@ if dry_run==0:
 #delete old pdf's
 r = os.listdir('.')
 for f in r:
-	if f.startswith("_page"):
-		print(f)
+	if f.startswith("_page") and dry_run==0:
+		os.remove(f)	

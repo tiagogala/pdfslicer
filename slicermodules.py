@@ -25,7 +25,10 @@ aformat_size = {'a0':(2384,3371),
 		'a2':(1190,1684),
 		'a3':( 842,1190),
 		'a4':( 595, 842),
-		'a5':( 420, 595)}
+		'a5':( 420, 595),
+		'a6':( 298, 420),
+		'a7':( 210, 298),
+		'a8':( 148, 210)}
 
 
 def getslicecuts(pages_xx, pages_yy, paper_x,paper_y, verbose=0):
@@ -39,8 +42,8 @@ def getslicecuts(pages_xx, pages_yy, paper_x,paper_y, verbose=0):
 	slicecuts = []
 	
 	i=0
-	for xx in range(0, pages_xx):
-		for yy in range(0, pages_yy):	
+	for yy in range(pages_yy-1, 0-1, -1):				#changed order for a more natural approach on the final file
+		for xx in range(0, pages_xx):	
 			slicecuts.append([xx*paper_x, (xx+1)*paper_x, yy*paper_y, (yy+1)*paper_y])
 			if verbose !=0:
 				print("\tPage "+str(i)+":\t","x1:", slicecuts[i][0],"x2",slicecuts[i][1] , "y1",slicecuts[i][2] , "y2", slicecuts[i][3])	
@@ -66,14 +69,10 @@ def applyboundaries(cuts, max_x, max_y):
 		#apply minimum size rules
 		if cuts[a][1]-cuts[a][0] <= MINIMUM_X:
 			rm_list.append(cuts[a])
-			print("Box too small (x):", cuts[a])
-		
+
 		if cuts[a][3]-cuts[a][2] <= MINIMUM_Y:
 			rm_list.append(cuts[a])
-			print("Box too small (y):", cuts[a])
 
-	
 	#actually remove items
 	for item in rm_list:
-		print("Removing", item)
 		cuts.remove(item)
