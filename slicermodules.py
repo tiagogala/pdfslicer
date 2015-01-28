@@ -79,15 +79,15 @@ def applyboundaries(cuts, max_x, max_y):
 	rm_list = []
 	#apply top boundaries
 	for a in range(0, len(cuts)):
-		if cuts[a][0] > max_x:
-			cuts[a][0] = max_x
-		if cuts[a][1] > max_x:
-			cuts[a][1] = max_x
-
-		if cuts[a][2] > max_y:
-			cuts[a][2] = max_y
-		if cuts[a][3] > max_y:
-			cuts[a][3] = max_y
+#		if cuts[a][0] > max_x:
+#			cuts[a][0] = max_x
+#		if cuts[a][1] > max_x:
+#			cuts[a][1] = max_x
+#
+#		if cuts[a][2] > max_y:
+#			cuts[a][2] = max_y
+#		if cuts[a][3] > max_y:
+#			cuts[a][3] = max_y
 
 		#apply minimum size rules
 		if cuts[a][1]-cuts[a][0] <= MINIMUM_X:

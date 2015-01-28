@@ -138,14 +138,19 @@ print("\n")
 
 
 #run ghostscript commands
+
+resolution = 300 	#dpi
+
 i=0
 while len(slicecuts) >= 1:
 	cut = slicecuts.pop(0)
-	com = ["gs -sDEVICE=pdfwrite",
+	pdfname="_page"+str(i).zfill(3)+".pdf"
+	cmd = ["gs -sDEVICE=pdfwrite",
 		"-q",
-		"-dFirstPage="+page,
-		"-dLastPage="+page,
-		"-o","_page"+str(i).zfill(3)+".pdf",
+		"-dFirstPage="+str(page),
+		"-dLastPage="+str(page),
+		"-o",pdfname,
+		"-c \"[/TrimBox [0 0 842 1190] /PAGES pdfmark\" "
 		"-c \"[/CropBox [", 
 		str(cut[0]),	#x1 
 		str(cut[2]),	#y1
@@ -155,19 +160,33 @@ while len(slicecuts) >= 1:
 		"-f",
 		input_file]
 	
-	if dry_run==0:
-		os.system(" ".join(com))
 
+	if dry_run==0:
+		os.system(" ".join(cmd))
+		#os.system(" ".join(com2))
 	i = i+1
 
 print("Sliced", input_file, "into", str(i),papersize.upper(),"sheets." )
 
+#making adjustments
+print("Making Adjustments...")
+r = os.listdir('.')
+for f in r:
+	if f.startswith("_page"):
+		
+		cmd2= ["gs -sDEVICE=pdfwrite -dFIXEDMEDIA -q -r"+str(resolution)+"x"+str(resolution),
+			"-g"+str(resolution*paper_y)+"x"+str(resolution*paper_x),
+			"-o", "d"+f,
+			f]
+		os.system(" ".join(cmd2))
+		os.remove(f)
+
 #join pdf's into single file
 if dry_run==0:
-	os.system("gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile="+output+".pdf _page*.pdf")
+	os.system("gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile="+output+".pdf d_page*.pdf")
 
 #delete old pdf's
 r = os.listdir('.')
 for f in r:
-	if f.startswith("_page") and dry_run==0:
+	if (f.startswith("_page") or f.startswith("d_page")) and dry_run==0:
 		os.remove(f)	
